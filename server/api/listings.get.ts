@@ -1,0 +1,41 @@
+export default defineEventHandler(() => {
+  // Mock Perth car listings - replace with real scraping/API integration
+  return [
+    {
+      id: '1',
+      title: '2018 Toyota Camry Ascent - Low KMs, One Owner',
+      make: 'Toyota',
+      model: 'Camry',
+      year: 2018,
+      price: 16500,
+      estimatedValue: 22000,
+      mileage: 65000,
+      location: 'Perth',
+      suburb: 'Joondalup',
+      source: 'Gumtree',
+      bodyType: 'Sedan',
+      transmission: 'Automatic',
+      fuelType: 'Petrol',
+      flipScore: 92,
+      profitEstimate: 4500,
+    },
+    {
+      id: '2',
+      title: '2016 Mazda CX-5 Maxx Sport - Needs Minor Work',
+      make: 'Mazda',
+      model: 'CX-5',
+      year: 2016,
+      price: 14000,
+      estimatedValue: 20500,
+      mileage: 98000,
+      location: 'Perth',
+      suburb: 'Rockingham',
+      source: 'Facebook Marketplace',
+      bodyType: 'SUV',
+      transmission: 'Automatic',
+      fuelType: 'Petrol',
+      flipScore: 88,
+      profitEstimate: 5000,
+    },
+  ]
+})

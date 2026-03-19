@@ -1,6 +1,7 @@
 {
-  "name": "repro-nuxt-scss-browserback",
+  "name": "perth-car-flip-alerts",
   "private": true,
+  "description": "Get notifications and alerts for newly listed cars in Perth - built for car flippers",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
