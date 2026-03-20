@@ -219,7 +219,8 @@ const route = useRoute()
 const { getListingById, getSimilarListings } = useListings()
 const { toggleWatchlist, isWatched } = useWatchlist()
 
-const listing = computed(() => getListingById(route.params.id))
+const id = computed(() => String(route.params.id))
+const listing = computed(() => getListingById(id.value))
 const similarDeals = computed(() => listing.value ? getSimilarListings(listing.value) : [])
 
 const scoreFactors = computed(() => {

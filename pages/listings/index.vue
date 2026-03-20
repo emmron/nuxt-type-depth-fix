@@ -140,9 +140,24 @@ const { filteredListings, filters, makes, bodyTypes, sources, suburbs } = useLis
 const { addSavedSearch } = useAlerts()
 const { toggleWatchlist, isWatched } = useWatchlist()
 
+const route = useRoute()
 const regions = ['North', 'South', 'East', 'Central']
 const showSaveSearch = ref(false)
 const searchName = ref('')
+
+// Apply filters from URL query params (e.g. from saved search links)
+onMounted(() => {
+  const q = route.query
+  if (Object.keys(q).length) {
+    if (q.make) filters.value.make = String(q.make)
+    if (q.bodyType) filters.value.bodyType = String(q.bodyType)
+    if (q.source) filters.value.source = String(q.source)
+    if (q.region) filters.value.region = String(q.region)
+    if (q.maxPrice) filters.value.maxPrice = Number(q.maxPrice)
+    if (q.minFlipScore) filters.value.minFlipScore = Number(q.minFlipScore)
+    if (q.search) filters.value.search = String(q.search)
+  }
+})
 
 const activeFilterCount = computed(() => {
   let count = 0
