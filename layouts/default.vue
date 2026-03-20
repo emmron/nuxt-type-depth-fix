@@ -14,6 +14,10 @@
             Alerts
             <span v-if="alertCount > 0" class="alert-badge">{{ alertCount }}</span>
           </NuxtLink>
+          <NuxtLink to="/watchlist" class="nav-link">
+            Watchlist
+            <span v-if="watchlistCount > 0" class="watch-badge">{{ watchlistCount }}</span>
+          </NuxtLink>
           <NuxtLink to="/saved" class="nav-link">Saved</NuxtLink>
         </div>
         <button class="mobile-toggle" @click="mobileOpen = !mobileOpen">
@@ -24,6 +28,7 @@
         <NuxtLink to="/" class="mobile-link" @click="mobileOpen = false">Home</NuxtLink>
         <NuxtLink to="/listings" class="mobile-link" @click="mobileOpen = false">Listings</NuxtLink>
         <NuxtLink to="/alerts" class="mobile-link" @click="mobileOpen = false">Alerts</NuxtLink>
+        <NuxtLink to="/watchlist" class="mobile-link" @click="mobileOpen = false">Watchlist</NuxtLink>
         <NuxtLink to="/saved" class="mobile-link" @click="mobileOpen = false">Saved</NuxtLink>
       </div>
     </nav>
@@ -39,6 +44,7 @@
 <script setup>
 const mobileOpen = ref(false)
 const { alerts } = useAlerts()
+const { watchlistCount } = useWatchlist()
 const alertCount = computed(() => alerts.value.filter(a => !a.read).length)
 </script>
 
@@ -118,6 +124,16 @@ const alertCount = computed(() => alerts.value.filter(a => !a.read).length)
 .alert-badge {
   background: var(--red);
   color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.watch-badge {
+  background: var(--accent);
+  color: var(--bg-primary);
   font-size: 0.65rem;
   font-weight: 700;
   padding: 1px 5px;

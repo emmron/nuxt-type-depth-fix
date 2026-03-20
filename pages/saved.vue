@@ -25,9 +25,12 @@
             <span v-if="search.filters.maxPrice" class="filter-tag">Under ${{ search.filters.maxPrice.toLocaleString() }}</span>
             <span v-if="search.filters.minFlipScore" class="filter-tag">Score {{ search.filters.minFlipScore }}+</span>
             <span v-if="search.filters.source" class="filter-tag">{{ search.filters.source }}</span>
+            <span v-if="search.filters.region" class="filter-tag">{{ search.filters.region }} Perth</span>
           </div>
           <div class="search-meta">
-            <span>{{ search.matchCount }} matches</span>
+            <NuxtLink :to="searchResultsUrl(search)" class="match-link">
+              {{ getMatchCount(search.id) }} matching car{{ getMatchCount(search.id) !== 1 ? 's' : '' }} &rarr;
+            </NuxtLink>
             <span>&bull;</span>
             <span v-if="search.lastTriggered">Last alert: {{ timeAgo(search.lastTriggered) }}</span>
             <span v-else>No alerts yet</span>
@@ -51,17 +54,15 @@
       <button class="btn btn-primary" @click="showCreate = true">Create Your First Search</button>
     </div>
 
-    <!-- Create Search Modal -->
+    <!-- Create Modal -->
     <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-label="Create saved search">
         <h3>Create Saved Search</h3>
         <p class="modal-desc">We'll alert you when new listings match these criteria.</p>
-
         <div class="form-group">
           <label>Search Name</label>
           <input v-model="newSearch.name" type="text" placeholder="e.g. SUVs Under $20k" class="form-input" />
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Make</label>
@@ -78,7 +79,6 @@
             </select>
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Max Price</label>
@@ -89,15 +89,25 @@
             <input v-model.number="newSearch.minFlipScore" type="number" placeholder="e.g. 70" min="0" max="100" class="form-input" />
           </div>
         </div>
-
-        <div class="form-group">
-          <label>Source</label>
-          <select v-model="newSearch.source" class="form-input">
-            <option value="">Any Source</option>
-            <option v-for="s in sources" :key="s" :value="s">{{ s }}</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source</label>
+            <select v-model="newSearch.source" class="form-input">
+              <option value="">Any Source</option>
+              <option v-for="s in sources" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Region</label>
+            <select v-model="newSearch.region" class="form-input">
+              <option value="">All Perth</option>
+              <option value="North">North</option>
+              <option value="South">South</option>
+              <option value="East">East</option>
+              <option value="Central">Central</option>
+            </select>
+          </div>
         </div>
-
         <div class="modal-actions">
           <button class="btn btn-secondary" @click="showCreate = false">Cancel</button>
           <button class="btn btn-primary" :disabled="!newSearch.name" @click="createSearch">Create &amp; Enable Alerts</button>
@@ -105,21 +115,21 @@
       </div>
     </div>
 
-    <!-- Tips Section -->
+    <!-- Tips -->
     <section class="tips-section">
-      <h2>Flipper Tips</h2>
+      <h2>Perth Flipper Tips</h2>
       <div class="tips-grid">
         <div class="tip-card">
-          <h4>Best Makes to Flip in Perth</h4>
-          <p>Toyota, Mazda and Hyundai sell fastest. Hilux and Ranger utes always have strong demand in WA.</p>
+          <h4>Best Makes to Flip</h4>
+          <p>Toyota, Mazda and Hyundai sell fastest. Hilux and Ranger utes always have strong demand in WA. Avoid European cars unless you know the repair costs.</p>
         </div>
         <div class="tip-card">
           <h4>Where to Find Deals</h4>
-          <p>Deceased estates, divorce sales, and repo auctions through Pickles (Welshpool) and Manheim often have the best margins.</p>
+          <p>Deceased estates, divorce sales and repo auctions (Pickles Welshpool, Manheim) often have the best margins. Ex-fleet clearances are worth watching too.</p>
         </div>
         <div class="tip-card">
-          <h4>Quick Turnaround Tips</h4>
-          <p>Detail the car, get a fresh service, and list on multiple platforms. Cars under $20k in Perth move within 1-2 weeks.</p>
+          <h4>Factor In Real Costs</h4>
+          <p>Use the deal calculator on each listing. Auction fees (10-15%), transport, detailing ($400+), rego transfer ($200), and roadworthy ($300) add up fast.</p>
         </div>
       </div>
     </section>
@@ -127,19 +137,23 @@
 </template>
 
 <script setup>
-const { savedSearches, toggleSearchNotify, deleteSavedSearch, addSavedSearch } = useAlerts()
-const { makes, bodyTypes, sources } = useListings()
+const { savedSearches, toggleSearchNotify, deleteSavedSearch, addSavedSearch, getMatchCount } = useAlerts()
+const { makes, bodyTypes, sources, filters: listingFilters } = useListings()
+const router = useRouter()
 
 const showCreate = ref(false)
+const newSearch = ref({ name: '', make: '', bodyType: '', maxPrice: null, minFlipScore: null, source: '', region: '' })
 
-const newSearch = ref({
-  name: '',
-  make: '',
-  bodyType: '',
-  maxPrice: null,
-  minFlipScore: null,
-  source: '',
-})
+function searchResultsUrl(search) {
+  const params = new URLSearchParams()
+  if (search.filters.make) params.set('make', search.filters.make)
+  if (search.filters.bodyType) params.set('bodyType', search.filters.bodyType)
+  if (search.filters.maxPrice) params.set('maxPrice', String(search.filters.maxPrice))
+  if (search.filters.minFlipScore) params.set('minFlipScore', String(search.filters.minFlipScore))
+  if (search.filters.source) params.set('source', search.filters.source)
+  if (search.filters.region) params.set('region', search.filters.region)
+  return '/listings?' + params.toString()
+}
 
 function createSearch() {
   if (!newSearch.value.name.trim()) return
@@ -149,15 +163,10 @@ function createSearch() {
   if (newSearch.value.maxPrice) filters.maxPrice = newSearch.value.maxPrice
   if (newSearch.value.minFlipScore) filters.minFlipScore = newSearch.value.minFlipScore
   if (newSearch.value.source) filters.source = newSearch.value.source
-
-  addSavedSearch({
-    name: newSearch.value.name,
-    filters,
-    notifyEnabled: true,
-  })
-
+  if (newSearch.value.region) filters.region = newSearch.value.region
+  addSavedSearch({ name: newSearch.value.name, filters, notifyEnabled: true })
   showCreate.value = false
-  newSearch.value = { name: '', make: '', bodyType: '', maxPrice: null, minFlipScore: null, source: '' }
+  newSearch.value = { name: '', make: '', bodyType: '', maxPrice: null, minFlipScore: null, source: '', region: '' }
 }
 
 function timeAgo(dateStr) {
@@ -173,312 +182,61 @@ function timeAgo(dateStr) {
 </script>
 
 <style scoped>
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-}
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.75rem; font-weight: 800; }
+.page-desc { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem; }
 
-.page-header h1 {
-  font-size: 1.75rem;
-  font-weight: 800;
-}
+.btn { padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: none; cursor: pointer; }
+.btn-primary { background: var(--accent); color: var(--bg-primary); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-primary); border: 1px solid var(--border); }
 
-.page-desc {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
+.searches-list { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 3rem; }
+.search-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; padding: 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+.search-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+.search-header h3 { font-size: 1.05rem; font-weight: 700; }
+.search-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.filter-tag { background: rgba(34,211,238,0.1); color: var(--accent); padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+.search-meta { display: flex; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); align-items: center; flex-wrap: wrap; }
+.match-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+.match-link:hover { text-decoration: underline; }
 
-.btn {
-  padding: 0.6rem 1.25rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  border: none;
-}
+.search-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; flex-shrink: 0; }
+.notify-status { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.notify-status.active { color: var(--green); }
+.btn-delete { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+.btn-delete:hover { color: var(--red); border-color: var(--red); }
 
-.btn-primary {
-  background: var(--accent);
-  color: var(--bg-primary);
-}
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 11px; transition: 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: var(--text-primary); border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
-.btn-primary:hover {
-  background: var(--accent-hover);
-}
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(4px); }
+.modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; max-width: 500px; width: 90%; }
+.modal h3 { font-size: 1.2rem; margin-bottom: 0.35rem; }
+.modal-desc { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1rem; flex: 1; }
+.form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem; }
+.form-input { width: 100%; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.85rem; color: var(--text-primary); font-size: 0.85rem; outline: none; }
+.form-input:focus { border-color: var(--accent); }
+.form-row { display: flex; gap: 1rem; }
+.modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.empty-state { text-align: center; padding: 3rem 1rem; margin-bottom: 2rem; }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-state h3 { margin-bottom: 0.5rem; }
+.empty-state p { color: var(--text-secondary); margin-bottom: 1.5rem; }
 
-.btn-secondary {
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-/* Searches List */
-.searches-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 3rem;
-}
-
-.search-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-  padding: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.search-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.search-header h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.search-filters {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.5rem;
-}
-
-.filter-tag {
-  background: rgba(34, 211, 238, 0.1);
-  color: var(--accent);
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.search-meta {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.search-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.notify-status {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.notify-status.active {
-  color: var(--green);
-}
-
-.btn-delete {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  padding: 0.3rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-}
-
-.btn-delete:hover {
-  color: var(--red);
-  border-color: var(--red);
-}
-
-/* Toggle */
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background: var(--border);
-  border-radius: 11px;
-  transition: 0.2s;
-}
-
-.toggle-slider::before {
-  content: '';
-  position: absolute;
-  height: 16px;
-  width: 16px;
-  left: 3px;
-  bottom: 3px;
-  background: var(--text-primary);
-  border-radius: 50%;
-  transition: 0.2s;
-}
-
-.toggle input:checked + .toggle-slider {
-  background: var(--accent);
-}
-
-.toggle input:checked + .toggle-slider::before {
-  transform: translateX(18px);
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 2rem;
-  max-width: 500px;
-  width: 90%;
-}
-
-.modal h3 {
-  font-size: 1.2rem;
-  margin-bottom: 0.35rem;
-}
-
-.modal-desc {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-  flex: 1;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.35rem;
-}
-
-.form-input {
-  width: 100%;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.85rem;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  outline: none;
-}
-
-.form-input:focus {
-  border-color: var(--accent);
-}
-
-.form-row {
-  display: flex;
-  gap: 1rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-  margin-bottom: 2rem;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-}
-
-/* Tips */
-.tips-section {
-  margin-top: 2rem;
-}
-
-.tips-section h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.tips-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
-}
-
-.tip-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-}
-
-.tip-card h4 {
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  color: var(--accent);
-}
-
-.tip-card p {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
+.tips-section { margin-top: 2rem; }
+.tips-section h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; }
+.tips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.tip-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+.tip-card h4 { font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--accent); }
+.tip-card p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
 
 @media (max-width: 768px) {
   .page-header { flex-direction: column; gap: 1rem; }
